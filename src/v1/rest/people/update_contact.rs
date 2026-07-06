@@ -1,0 +1,87 @@
+//! Update a People contact (`people.updateContact`).
+//!
+//! The person must carry its server-assigned resource name and the etag
+//! from the latest read; every field named in the update mask is fully
+//! replaced.
+//!
+//! <https://developers.google.com/people/api/rest/v1/people/updateContact>
+
+use alloc::format;
+
+use io_http::rfc6750::bearer::HttpAuthBearer;
+use log::{debug, trace};
+use serde_variant::to_variant_name;
+use url::Url;
+
+use crate::{
+    coroutine::*,
+    people_try,
+    v1::{
+        query::to_field_mask,
+        rest::people::{PeoplePerson, PeoplePersonField, PeopleReadSourceType},
+        send::{PEOPLE_API_BASE, PeopleSend, PeopleSendError, PeopleSendOutput},
+    },
+};
+
+/// People REST contact update, replacing the masked fields.
+pub struct PeopleContactUpdate {
+    send: PeopleSend<PeoplePerson>,
+}
+
+impl PeopleContactUpdate {
+    pub fn new(
+        auth: &HttpAuthBearer,
+        person: &PeoplePerson,
+        update_person_fields: &[PeoplePersonField],
+        person_fields: &[PeoplePersonField],
+        sources: &[PeopleReadSourceType],
+    ) -> Result<Self, PeopleSendError> {
+        debug!("prepare people contact for update");
+        trace!("person: {person:?}");
+        trace!("update_person_fields: {update_person_fields:?}");
+        trace!("person_fields: {person_fields:?}");
+        trace!("sources: {sources:?}");
+
+        if person.resource_name.trim().is_empty() {
+            let err =
+                PeopleSendError::InvalidRequest("Person resource name cannot be empty".into());
+            return Err(err);
+        }
+
+        if update_person_fields.is_empty() {
+            let err =
+                PeopleSendError::InvalidRequest("Update person fields cannot be empty".into());
+            return Err(err);
+        }
+
+        let mut url = Url::parse(PEOPLE_API_BASE)?
+            .join(&format!("{}:updateContact", person.resource_name))?;
+
+        {
+            let mut pairs = url.query_pairs_mut();
+            pairs.append_pair("updatePersonFields", &to_field_mask(update_person_fields));
+            if !person_fields.is_empty() {
+                pairs.append_pair("personFields", &to_field_mask(person_fields));
+            }
+            for source in sources {
+                pairs.append_pair("sources", to_variant_name(source).unwrap_or_default());
+            }
+        }
+
+        let send = PeopleSend::patch_json(auth, url, person)?;
+
+        Ok(Self { send })
+    }
+}
+
+impl PeopleCoroutine for PeopleContactUpdate {
+    type Yield = PeopleYield;
+    type Return = Result<PeopleSendOutput<PeoplePerson>, PeopleSendError>;
+
+    fn resume(&mut self, arg: Option<&[u8]>) -> PeopleCoroutineState<Self::Yield, Self::Return> {
+        let out = people_try!(&mut self.send, arg);
+        debug!("people contact updated");
+        trace!("out: {out:?}");
+        PeopleCoroutineState::Complete(Ok(out))
+    }
+}
