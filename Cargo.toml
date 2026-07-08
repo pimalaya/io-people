@@ -43,4 +43,3 @@ url = { version = "2.5", default-features = false, features = ["serde"] }
 
 [patch.crates-io]
 io-http.git = "https://github.com/pimalaya/io-http"
-pimalaya-stream.git = "https://github.com/pimalaya/stream"
