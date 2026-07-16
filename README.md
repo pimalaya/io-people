@@ -1,175 +1,79 @@
-# I/O Google People [![Documentation](https://img.shields.io/docsrs/io-google-people?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/io-google-people/latest/io_google_people) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
+# I/O Google People [![Documentation](https://img.shields.io/docsrs/io-people?style=flat&logo=docs.rs&logoColor=white)](https://docs.rs/io-people/latest/io_people) [![Matrix](https://img.shields.io/badge/chat-%23pimalaya-blue?style=flat&logo=matrix&logoColor=white)](https://matrix.to/#/#pimalaya:matrix.org) [![Mastodon](https://img.shields.io/badge/news-%40pimalaya-blue?style=flat&logo=mastodon&logoColor=white)](https://fosstodon.org/@pimalaya)
 
-Google People API client library, written in Rust.
+Google People API client library for Rust
 
-https://developers.google.com/people/api/rest
+This library is composed of 3 feature-gated layers:
+
+- Low-level **I/O-free** coroutines: no_std-compatible state machines containing the whole People API logic, usable anywhere
+- Mid-level **light client**: a standard, blocking client wrapping a stream you opened yourself
+- High-level **full client**: the light client plus TCP connections and TLS negotiations handled for you
 
 ## Table of contents
 
+- [Features](#features)
+- [API coverage](#api-coverage)
 - [Usage](#usage)
 - [Examples](#examples)
-- [License](#license)
 - [AI disclosure](#ai-disclosure)
-- [Contributing](CONTRIBUTING.md)
+- [License](#license)
 - [Social](#social)
+- [Contributing](#contributing)
 - [Sponsoring](#sponsoring)
+
+## Features
+
+- **I/O-free coroutines**: no_std state machines with no sockets and no async runtime, resumable from any blocking, async or in-memory test harness.
+- **Contacts**: create, read, update and delete personal contacts, one at a time or in batches.
+- **Contact groups**: create, read, update and delete groups, and move contacts in and out of them.
+- **Other contacts**: list and search the contacts Google collects automatically, and copy one into your personal contacts.
+- **Directory**: list and search the people shared across a Google Workspace organisation.
+- **Contact photos**: upload and delete a contact's photo.
+- **Incremental sync**: enumerate once, then pull only what changed with a sync token.
+- Light standard, blocking client wrapping a stream you opened yourself
+- Full standard, blocking client with **TLS** support:
+  - [Rustls](https://crates.io/crates/rustls) with ring crypto (requires `rustls-ring` feature, enabled by default)
+  - [Rustls](https://crates.io/crates/rustls) with aws crypto (requires `rustls-aws` feature)
+  - [Native TLS](https://crates.io/crates/native-tls) (requires `native-tls` feature)
+
+> [!TIP]
+> I/O People is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate the client layers. The default feature set is declared in [Cargo.toml](./Cargo.toml) or on [docs.rs](https://docs.rs/crate/io-people/latest/features).
+
+## API coverage
+
+The crate targets version 1 of the [Google People API](https://developers.google.com/people/api/rest). Deprecated fields the reference marks as returning no data are omitted.
+
+| Resource         | What is covered                                                                                                        |
+|------------------|-----------------------------------------------------------------------------------------------------------------------|
+| [people]         | Get, create, update and delete contacts; batch create, update and delete; search contacts; list and search directory people; upload and delete contact photos |
+| [connections]    | List a user's contacts, with full enumeration and incremental sync via a sync token                                   |
+| [contactGroups]  | List, get, batch get, create, update and delete contact groups                                                        |
+| [members]        | Add contacts to and remove contacts from a group                                                                      |
+| [otherContacts]  | List and search the automatically collected contacts, and copy one into the personal contacts group                  |
+
+[people]: https://developers.google.com/people/api/rest/v1/people
+[connections]: https://developers.google.com/people/api/rest/v1/people.connections/list
+[contactGroups]: https://developers.google.com/people/api/rest/v1/contactGroups
+[members]: https://developers.google.com/people/api/rest/v1/contactGroups.members/modify
+[otherContacts]: https://developers.google.com/people/api/rest/v1/otherContacts
 
 ## Usage
 
-I/O Google People can be consumed three ways, depending on how much of the I/O stack you want to own. Each mode is gated by cargo features.
-
-> [!TIP]
-> I/O Google People is written in [Rust](https://www.rust-lang.org/) and uses [cargo features](https://doc.rust-lang.org/cargo/reference/features.html) to gate the client layers. The default feature set is declared in [Cargo.toml](./Cargo.toml) or on [docs.rs](https://docs.rs/crate/io-google-people/latest/features).
-
-### Full client
-
-If you want a ready-to-use, standard, blocking client with TCP connection and TLS negociation managed for you:
-
-```toml,ignore
-[dependencies]
-io-google-people = "0.0.1" # rustls-ring is enabled by default
-```
-
-```rust,no_run
-use io_google_people::v1::{client::PeopleClientStd, rest::people::PeoplePersonField};
-
-let mut client = PeopleClientStd::connect("token", Default::default()).unwrap();
-
-let out = client
-    .connections_list(&[PeoplePersonField::Names], &Default::default())
-    .unwrap();
-
-for connection in &out.response.connections {
-    for name in &connection.names {
-        println!("{}: {:?}", connection.resource_name, name.display_name);
-    }
-}
-```
-
-### Light client
-
-If you still want a standard, blocking client but you want to manage TCP and TLS on your own:
-
-```toml,ignore
-[dependencies]
-io-google-people = { version = "0.0.1", default-features = false, features = ["client"] }
-rustls = "0.23"
-rustls-platform-verifier = "0.7"
-```
-
-```rust,no_run
-use std::{net::TcpStream, sync::Arc};
-
-use io_google_people::v1::{client::PeopleClientStd, rest::people::PeoplePersonField};
-use rustls::{ClientConfig, ClientConnection, StreamOwned};
-use rustls_platform_verifier::ConfigVerifierExt;
-
-// TLS config
-let config = ClientConfig::with_platform_verifier().unwrap();
-let server_name = "people.googleapis.com".try_into().unwrap();
-let conn = ClientConnection::new(Arc::new(config), server_name).unwrap();
-let tcp = TcpStream::connect(("people.googleapis.com", 443)).unwrap();
-let stream = StreamOwned::new(conn, tcp);
-
-// Standard, blocking client
-let mut client = PeopleClientStd::new(stream, "token");
-
-let out = client
-    .connections_list(&[PeoplePersonField::Names], &Default::default())
-    .unwrap();
-
-for connection in &out.response.connections {
-    for name in &connection.names {
-        println!("{}: {:?}", connection.resource_name, name.display_name);
-    }
-}
-```
-
-### Coroutines
-
-Otherwise you can build your own client using I/O-free coroutines directly:
-
-```toml,ignore
-[dependencies]
-io-google-people = { version = "0.0.1", default-features = false }
-rustls = "0.23"
-rustls-platform-verifier = "0.7"
-tokio = { version = "1", features = ["full"] }
-tokio-rustls = "0.26"
-```
-
-```rust,no_run
-use std::sync::Arc;
-
-use io_google_people::{
-    coroutine::*,
-    v1::rest::people::{PeoplePersonField, get::PeoplePersonGet},
-};
-use io_http::rfc6750::bearer::HttpAuthBearer;
-use rustls::ClientConfig;
-use rustls_platform_verifier::ConfigVerifierExt;
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    net::TcpStream,
-};
-use tokio_rustls::TlsConnector;
-
-#[tokio::main]
-async fn main() {
-    // Async TLS connection
-    let config = ClientConfig::with_platform_verifier().unwrap();
-    let connector = TlsConnector::from(Arc::new(config));
-    let server_name = "people.googleapis.com".try_into().unwrap();
-    let tcp = TcpStream::connect(("people.googleapis.com", 443)).await.unwrap();
-    let mut stream = connector.connect(server_name, tcp).await.unwrap();
-
-    // Run the I/O-free coroutine against the async stream
-    let auth = HttpAuthBearer::new("token");
-    let mut coroutine =
-        PeoplePersonGet::new(&auth, "people/me", &[PeoplePersonField::Names], &[]).unwrap();
-    let mut arg: Option<&[u8]> = None;
-    let mut buf = [0u8; 8192];
-    let mut read_buf = Vec::<u8>::new();
-
-    let out = loop {
-        match coroutine.resume(arg.take()) {
-            PeopleCoroutineState::Complete(Ok(out)) => break out,
-            PeopleCoroutineState::Yielded(PeopleYield::WantsRead) => {
-                let n = stream.read(&mut buf).await.unwrap();
-                read_buf.clear();
-                read_buf.extend_from_slice(&buf[..n]);
-                arg = Some(&read_buf);
-            }
-            PeopleCoroutineState::Yielded(PeopleYield::WantsWrite(bytes)) => {
-                stream.write_all(&bytes).await.unwrap();
-            }
-            PeopleCoroutineState::Complete(Err(err)) => panic!("{err}"),
-        }
-    };
-
-    println!("Display name: {:?}", out.response.names[0].display_name);
-}
-```
-
-> [!IMPORTANT]
-> For such advanced usage, it is preferable to read the [architecture guide](ARCHITECTURE.md).
+The whole API is documented on [docs.rs](https://docs.rs/io-people/latest/io_people), including runnable snippets for every coroutine and client.
 
 ## Examples
 
-Have a look at real-world projects built on top of this library:
-
-- [Cardamum CLI](https://github.com/pimalaya/cardamum): CLI to manage contacts
+Complete runnable programs live in [./examples](./examples); the tests also demonstrate real usage.
 
 ## AI disclosure
 
 This project is developed with AI assistance. This section documents how, so users and downstream packagers can make informed decisions.
 
-- **Tools**: Claude Code (Anthropic), Opus 4.8, invoked locally with a persistent project-scoped memory and a small set of repo-specific rules.
+- **Tools**: Claude Code (Anthropic), invoked locally with a persistent project-scoped memory and a small set of repo-specific rules.
 - **Used for**: Refactors, mechanical multi-file edits, boilerplate (feature gates, error enums, derive macros, trait impls), test scaffolding, doc polish, exploratory design conversations.
 - **Not used for**: Engineering, critical code, git manipulation (commit, merge, rebase…), real-world tests.
-- **Verification**: Every AI-assisted change is read, compiled, tested, and formatted before commit (`nix develop --command cargo check / cargo test / cargo fmt`). Behavioural correctness is verified against the People API reference, not assumed from the model output. Tests are never adjusted to fit AI-generated code; the code is adjusted to fit correct behaviour.
-- **Limitations**: AI models occasionally produce code that compiles and passes tests but is subtly wrong: off-by-one errors, missed edge cases, plausible but nonexistent APIs, stale spec references. The verification workflow catches most of this; it does not catch all of it. Bug reports are welcome and taken seriously.
-- **Last reviewed**: 16/06/2026
+- **Verification**: Every AI-assisted change is read, compiled, tested, and formatted before commit. Behavioural correctness is verified against the People API reference, not assumed from the model output. Tests are never adjusted to fit AI-generated code; the code is adjusted to fit correct behaviour.
+- **Limitations**: AI models occasionally produce code that compiles and passes tests but is subtly wrong. The verification workflow catches most of this; it does not catch all of it. Bug reports are welcome and taken seriously.
+- **Last reviewed**: 16/07/2026
 
 ## License
 
@@ -185,6 +89,10 @@ at your option.
 - Chat on [Matrix](https://matrix.to/#/#pimalaya:matrix.org)
 - News on [Mastodon](https://fosstodon.org/@pimalaya) or [RSS](https://fosstodon.org/@pimalaya.rss)
 - Mail at [pimalaya.org@posteo.net](mailto:pimalaya.org@posteo.net)
+
+## Contributing
+
+Contributions are welcome: start with [CONTRIBUTING.md](./CONTRIBUTING.md), which opens with the Pimalaya-wide guides to read first.
 
 ## Sponsoring
 

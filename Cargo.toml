@@ -1,14 +1,16 @@
 [package]
-name = "io-google-people"
-description = "Google People API client library"
+name = "io-people"
+description = "Google People API client library for Rust"
 version = "0.0.1"
 authors = ["metrovoc", "soywod <pimalaya.org@posteo.net>"]
 rust-version = "1.87"
 edition = "2024"
 license = "MIT OR Apache-2.0"
-categories = ["api-bindings"]
-keywords = ["io-free", "coroutine", "google", "contacts", "rest"]
-repository = "https://github.com/pimalaya/io-google-people"
+categories = ["api-bindings", "no-std"]
+keywords = ["io-free", "no-std", "coroutine", "google", "contacts"]
+homepage = "https://pimalaya.org"
+documentation = "https://docs.rs/io-people/latest/io_people"
+repository = "https://github.com/pimalaya/io-people"
 
 [package.metadata.docs.rs]
 all-features = true
@@ -22,6 +24,11 @@ rustls-aws = ["client", "pimalaya-stream/rustls-aws", "dep:anyhow", "dep:pimalay
 native-tls = ["client", "pimalaya-stream/native-tls", "dep:anyhow", "dep:pimalaya-stream"]
 vendored = ["pimalaya-stream?/vendored"]
 
+[[example]]
+name = "std_people"
+path = "examples/std_people.rs"
+required-features = ["rustls-ring"]
+
 [dev-dependencies]
 env_logger = "0.11"
 rustls = { version = "0.23", default-features = false, features = ["logging", "std", "tls12"] }
@@ -32,14 +39,11 @@ tokio-rustls = "0.26"
 [dependencies]
 anyhow = { version = "1", optional = true }
 base64 = { version = "0.22", default-features = false, features = ["alloc"] }
-io-http = { version = "0.2", default-features = false }
+io-http = { version = "0.3", default-features = false }
 log = { version = "0.4", default-features = false }
-pimalaya-stream = { version = "0.0.1", default-features = false, optional = true }
+pimalaya-stream = { version = "0.1", default-features = false, optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"] }
-serde_variant = { version = "0.1", default-features = false }
 serde_json = { version = "1", default-features = false, features = ["alloc"] }
+serde_variant = { version = "0.1", default-features = false }
 thiserror = { version = "2", default-features = false }
 url = { version = "2.5", default-features = false, features = ["serde"] }
-
-[patch.crates-io]
-io-http.git = "https://github.com/pimalaya/io-http"

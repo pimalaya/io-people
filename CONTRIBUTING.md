@@ -1,47 +1,39 @@
 # Contributing guide
 
-Thank you for investing your time in contributing to the I/O People project.
+Thank you for investing your time in contributing to I/O People.
 
-## Development
+Whether you are a human or an AI agent, read these in order before touching the code:
 
-The development environment is managed by [Nix](https://nixos.org/download.html).
-Running `nix-shell` will spawn a shell with everything you need to get started with the lib.
+1. the [Pimalaya README](https://github.com/pimalaya) for what the project is and how its repositories stack;
+2. the [Pimalaya CONTRIBUTING](https://github.com/pimalaya/.github/blob/master/CONTRIBUTING.md) guide, which chains to the shared architecture and guidelines;
+3. the inline header documentation, starting with src/lib.rs: it is the architecture document of this crate;
+4. the docs/ folder for the development history and living plans.
 
-If you do not want to use Nix, you can either use [rustup](https://rust-lang.github.io/rustup/index.html):
+Everything below documents only what differs from the Pimalaya standards.
 
-```sh
-rustup update
-```
+## Feature matrix
 
-or install manually the following dependencies:
-
-- [cargo](https://doc.rust-lang.org/cargo/)
-- [rustc](https://doc.rust-lang.org/stable/rustc/platform-support.html) (`>= 1.87`)
-
-## Build
+io-people follows the standard layered split (I/O-free coroutines, then the std client behind the `client` feature), plus a vendored switch compiling the TLS dependencies from source:
 
 ```sh
-cargo build
+cargo build --no-default-features                        # coroutines only, no std leak
+cargo build --no-default-features --features client      # light client, no TLS deps
+cargo build                                              # full client (rustls-ring by default)
+cargo build --no-default-features --features rustls-aws  # full client, aws-lc-rs crypto
+cargo build --no-default-features --features native-tls  # full client, platform TLS
+cargo build --features vendored                          # vendored TLS dependencies
 ```
 
-## Test
+## Tests
+
+The default suite is fully offline: every coroutine is driven against an in-memory stream replaying a canned HTTP response, so no network access nor OAuth token is required.
 
 ```sh
 cargo test
 ```
 
-The test suite is fully offline: each coroutine is driven against a scripted stub stream that replays a canned HTTP response, so no real network access or OAuth token is required.
+tests/people.rs is an ignored end-to-end test walking the whole CRUD surface against the live People API. It needs a TLS feature and a `PEOPLE_ACCESS_TOKEN` environment variable, and it deletes everything it creates:
 
-## Override dependencies
-
-All Pimalaya crates use `[patch.crates-io]` to point to sibling directories.
-If you want to build io-google-people against a locally modified dependency (e.g. `io-http`), add the following to `Cargo.toml`:
-
-```toml
-[patch.crates-io]
-io-http.path = "/path/to/io-http"
+```sh
+PEOPLE_ACCESS_TOKEN=<token> cargo test --test people -- --include-ignored
 ```
-
-## Commit style
-
-I/O People follows the [conventional commits specification](https://www.conventionalcommits.org/en/v1.0.0/#summary).
