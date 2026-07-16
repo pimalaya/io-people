@@ -1,5 +1,5 @@
 {
-  description = "Google People API client library for Rust";
+  description = "Google People REST API client library for Rust";
 
   inputs = {
     nixpkgs = {

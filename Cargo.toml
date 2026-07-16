@@ -1,6 +1,6 @@
 [package]
 name = "io-people"
-description = "Google People API client library for Rust"
+description = "Google People REST API client library for Rust"
 version = "0.1.0"
 authors = ["metrovoc", "soywod <pimalaya.org@posteo.net>"]
 rust-version = "1.87"

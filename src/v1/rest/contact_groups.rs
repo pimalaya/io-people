@@ -1,10 +1,19 @@
-//! People contact group resource types.
+//! People contact groups (`contactGroups`): list, get, batchGet,
+//! create, update, delete.
 //!
-//! <https://developers.google.com/people/api/rest/v1/contactGroups#ContactGroup>
+//! <https://developers.google.com/people/api/rest/v1/contactGroups>
 
 use alloc::{string::String, vec::Vec};
 
 use serde::{Deserialize, Serialize};
+
+pub mod batch_get;
+pub mod create;
+pub mod delete;
+pub mod get;
+pub mod list;
+pub mod members;
+pub mod update;
 
 use crate::v1::rest::people::PeopleStatus;
 

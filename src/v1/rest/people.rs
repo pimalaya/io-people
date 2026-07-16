@@ -1,14 +1,33 @@
-//! People person resource types.
+//! People persons (`people`): get, getBatchGet, createContact,
+//! updateContact, deleteContact, updateContactPhoto,
+//! deleteContactPhoto, batchCreateContacts, batchUpdateContacts,
+//! batchDeleteContacts, searchContacts, listDirectoryPeople,
+//! searchDirectoryPeople.
+//!
+//! <https://developers.google.com/people/api/rest/v1/people>
 //!
 //! Fields the reference marks as deprecated with "no data will be
 //! returned" (ageRange, braggingRights, relationshipInterests,
 //! relationshipStatuses, residences, taglines) are omitted.
-//!
-//! <https://developers.google.com/people/api/rest/v1/people#Person>
 
 use alloc::{string::String, vec::Vec};
 
 use serde::{Deserialize, Serialize};
+
+pub mod batch_create_contacts;
+pub mod batch_delete_contacts;
+pub mod batch_update_contacts;
+pub mod connections;
+pub mod create_contact;
+pub mod delete_contact;
+pub mod delete_contact_photo;
+pub mod get;
+pub mod get_batch_get;
+pub mod list_directory_people;
+pub mod search_contacts;
+pub mod search_directory_people;
+pub mod update_contact;
+pub mod update_contact_photo;
 
 /// Information about a person merged from various data sources such as
 /// the authenticated user's contacts and profile data.
