@@ -23,6 +23,10 @@ pub struct PeopleContactCreate {
 }
 
 impl PeopleContactCreate {
+    /// Build a new contact creation coroutine.
+    ///
+    /// `person_fields` is optional; when non-empty it controls which fields
+    /// are populated on the returned person after creation.
     pub fn new(
         auth: &HttpAuthBearer,
         person: &PeoplePerson,

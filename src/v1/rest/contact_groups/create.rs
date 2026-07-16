@@ -33,6 +33,8 @@ pub struct PeopleContactGroupCreate {
 }
 
 impl PeopleContactGroupCreate {
+    /// Build a contact-group creation coroutine; `group.name` must be
+    /// non-empty. `read_group_fields` controls the fields in the response.
     pub fn new(
         auth: &HttpAuthBearer,
         group: &PeopleContactGroup,

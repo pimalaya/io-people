@@ -30,11 +30,16 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleDirectoryListParams<'a> {
+    /// Additional person data to merge into each directory entry.
     pub merge_sources: &'a [PeopleDirectoryMergeSourceType],
+    /// Maximum number of people to return per page (max 1000).
     pub page_size: Option<u32>,
+    /// Page token from a previous response, used to retrieve the next page.
     pub page_token: Option<&'a str>,
+    /// When true, a `next_sync_token` is included in the final page response.
     #[serde(skip_serializing_if = "crate::v1::query::is_false")]
     pub request_sync_token: bool,
+    /// Sync token from a previous full listing, for incremental change fetch.
     pub sync_token: Option<&'a str>,
 }
 
@@ -42,10 +47,13 @@ pub struct PeopleDirectoryListParams<'a> {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleDirectoryListResponse {
+    /// Directory persons returned for this page.
     #[serde(default)]
     pub people: Vec<PeoplePerson>,
+    /// Token for retrieving the next page; absent on the final page.
     #[serde(default)]
     pub next_page_token: Option<String>,
+    /// Token for fetching incremental changes on subsequent calls.
     #[serde(default)]
     pub next_sync_token: Option<String>,
 }
@@ -56,6 +64,10 @@ pub struct PeopleDirectoryList {
 }
 
 impl PeopleDirectoryList {
+    /// Build a new directory people listing coroutine.
+    ///
+    /// Both `read_mask` and `sources` must be non-empty. `params` carries
+    /// optional merge sources, pagination, and sync-token arguments.
     pub fn new(
         auth: &HttpAuthBearer,
         read_mask: &[PeoplePersonField],

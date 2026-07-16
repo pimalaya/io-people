@@ -26,6 +26,7 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactsBatchCreateResponse {
+    /// Person responses for each newly created contact, in request order.
     #[serde(default)]
     pub created_people: Vec<PeoplePersonResponse>,
 }
@@ -51,6 +52,10 @@ pub struct PeopleContactsBatchCreate {
 }
 
 impl PeopleContactsBatchCreate {
+    /// Build a new contacts batch creation coroutine (200 max).
+    ///
+    /// `persons` and `read_mask` must be non-empty; `read_mask` controls
+    /// which fields are populated on the returned persons.
     pub fn new(
         auth: &HttpAuthBearer,
         persons: &[PeoplePerson],

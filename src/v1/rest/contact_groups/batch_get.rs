@@ -27,6 +27,7 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactGroupsBatchGetResponse {
+    /// One entry per requested resource name, in the same order.
     #[serde(default)]
     pub responses: Vec<PeopleContactGroupResponse>,
 }
@@ -38,6 +39,8 @@ pub struct PeopleContactGroupsBatchGet {
 }
 
 impl PeopleContactGroupsBatchGet {
+    /// Build a batch contact-group retrieval coroutine for up to 200
+    /// resource names, an optional member cap, and a field mask.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_names: &[String],

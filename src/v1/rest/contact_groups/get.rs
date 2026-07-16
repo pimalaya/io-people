@@ -24,6 +24,8 @@ pub struct PeopleContactGroupGet {
 }
 
 impl PeopleContactGroupGet {
+    /// Build a single contact-group retrieval coroutine for the given
+    /// resource name, optional member cap, and field mask.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,

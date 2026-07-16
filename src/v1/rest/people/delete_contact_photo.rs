@@ -25,6 +25,8 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactPhotoDeleteResponse {
+    /// The person after photo removal, populated when `person_fields` was
+    /// given.
     #[serde(default)]
     pub person: Option<PeoplePerson>,
 }
@@ -35,6 +37,10 @@ pub struct PeopleContactPhotoDelete {
 }
 
 impl PeopleContactPhotoDelete {
+    /// Build a new contact photo deletion coroutine.
+    ///
+    /// `person_fields` is optional; when non-empty the response includes the
+    /// updated person with the specified fields populated.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,

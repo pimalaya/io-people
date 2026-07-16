@@ -40,6 +40,8 @@ pub struct PeopleContactGroupUpdate {
 }
 
 impl PeopleContactGroupUpdate {
+    /// Build a contact-group update coroutine. `update_group_fields` names
+    /// the fields to replace; `read_group_fields` controls the response.
     pub fn new(
         auth: &HttpAuthBearer,
         group: &PeopleContactGroup,

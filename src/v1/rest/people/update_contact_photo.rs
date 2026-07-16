@@ -28,6 +28,7 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactPhotoUpdateResponse {
+    /// The updated person, populated when a `person_fields` mask was given.
     #[serde(default)]
     pub person: Option<PeoplePerson>,
 }
@@ -48,6 +49,10 @@ pub struct PeopleContactPhotoUpdate {
 }
 
 impl PeopleContactPhotoUpdate {
+    /// Build a new contact photo update coroutine.
+    ///
+    /// `photo` must be non-empty JPEG or PNG bytes; they are base64-encoded
+    /// into the request body. `person_fields` controls the returned person.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,

@@ -24,8 +24,12 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactGroupsListParams<'a> {
+    /// Maximum number of groups to return per page (server default: 30,
+    /// max: 1000).
     pub page_size: Option<u32>,
+    /// Token from a previous response to retrieve the next page.
     pub page_token: Option<&'a str>,
+    /// Token from a previous response to perform incremental sync.
     pub sync_token: Option<&'a str>,
 }
 
@@ -33,12 +37,16 @@ pub struct PeopleContactGroupsListParams<'a> {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactGroupsListResponse {
+    /// Contact groups returned for this page of results.
     #[serde(default)]
     pub contact_groups: Vec<PeopleContactGroup>,
+    /// Token to pass as `page_token` to retrieve the next page.
     #[serde(default)]
     pub next_page_token: Option<String>,
+    /// Token to pass as `sync_token` on the next incremental sync.
     #[serde(default)]
     pub next_sync_token: Option<String>,
+    /// Total number of groups across all pages.
     #[serde(default)]
     pub total_items: Option<u32>,
 }
@@ -49,6 +57,8 @@ pub struct PeopleContactGroupsList {
 }
 
 impl PeopleContactGroupsList {
+    /// Build a contact-groups listing coroutine for the given field mask
+    /// and optional pagination/sync parameters.
     pub fn new(
         auth: &HttpAuthBearer,
         group_fields: &[PeopleGroupField],

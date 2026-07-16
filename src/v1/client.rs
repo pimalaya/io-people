@@ -71,11 +71,14 @@ use crate::{
     v1::send::{PeopleNoResponse, PeopleSendError, PeopleSendOutput},
 };
 
+/// Errors produced by [`PeopleClientStd`] operations.
 #[derive(Debug, Error)]
 pub enum PeopleClientStdError {
+    /// A People API send coroutine returned an error.
     #[error(transparent)]
     Send(#[from] PeopleSendError),
 
+    /// An I/O error occurred while reading from or writing to the stream.
     #[error(transparent)]
     Io(#[from] io::Error),
 
@@ -84,6 +87,7 @@ pub enum PeopleClientStdError {
         feature = "rustls-ring",
         feature = "native-tls"
     ))]
+    /// A TLS handshake or connection error.
     #[error(transparent)]
     Tls(#[from] anyhow::Error),
     #[cfg(any(
@@ -91,6 +95,7 @@ pub enum PeopleClientStdError {
         feature = "rustls-ring",
         feature = "native-tls"
     ))]
+    /// The People API base URL contains no host component.
     #[error("People URL `{0}` has no host")]
     UrlMissingHost(String),
     #[cfg(any(
@@ -98,6 +103,7 @@ pub enum PeopleClientStdError {
         feature = "rustls-ring",
         feature = "native-tls"
     ))]
+    /// The URL scheme is neither `http` nor `https`.
     #[error("People URL `{0}` has unsupported scheme `{1}` (expected `http` or `https`)")]
     UrlUnsupportedScheme(String, String),
 }
@@ -111,17 +117,22 @@ pub struct PeopleClientStdConnectOptions {
         feature = "rustls-ring",
         feature = "native-tls"
     ))]
+    /// TLS connector configuration passed to the underlying stream.
     pub tls: Tls,
 }
 
 const READ_BUFFER_SIZE: usize = 16 * 1024;
 
+/// Std-blocking People API client holding a stream and a bearer credential.
 pub struct PeopleClientStd {
+    /// The underlying read/write stream used for all HTTP communication.
     pub stream: Box<dyn PeopleStream>,
+    /// The bearer-token credential attached to every outgoing request.
     pub auth: HttpAuthBearer,
 }
 
 impl PeopleClientStd {
+    /// Construct a client from an existing stream and a bearer token.
     pub fn new<S: Read + Write + Send + 'static>(stream: S, token: impl ToString) -> Self {
         Self {
             stream: Box::new(stream),
@@ -134,6 +145,7 @@ impl PeopleClientStd {
         feature = "rustls-ring",
         feature = "native-tls"
     ))]
+    /// Open a TLS connection to `people.googleapis.com` and return a client.
     pub fn connect(
         token: impl ToString,
         options: PeopleClientStdConnectOptions,
@@ -164,10 +176,13 @@ impl PeopleClientStd {
         })
     }
 
+    /// Replace the underlying stream, e.g. after a reconnect.
     pub fn set_stream<S: Read + Write + Send + 'static>(&mut self, stream: S) {
         self.stream = Box::new(stream);
     }
 
+    /// Drive a People coroutine to completion, performing all I/O on the
+    /// client's stream.
     pub fn run<C, T>(
         &mut self,
         mut coroutine: C,
@@ -197,6 +212,7 @@ impl PeopleClientStd {
         }
     }
 
+    /// List the authenticated user's contacts (people.connections.list).
     pub fn connections_list(
         &mut self,
         person_fields: &[PeoplePersonField],
@@ -206,6 +222,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Fetch a single person by resource name (people.get).
     pub fn person_get(
         &mut self,
         resource_name: &str,
@@ -216,6 +233,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Create a new contact and return the created person (people.createContact).
     pub fn contact_create(
         &mut self,
         person: &PeoplePerson,
@@ -226,6 +244,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Update an existing contact and return the updated person
+    /// (people.updateContact).
     pub fn contact_update(
         &mut self,
         person: &PeoplePerson,
@@ -243,6 +263,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Delete a contact by resource name (people.deleteContact).
     pub fn contact_delete(
         &mut self,
         resource_name: &str,
@@ -251,6 +272,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Search the authenticated user's contacts by query string
+    /// (people.searchContacts).
     pub fn contacts_search(
         &mut self,
         query: &str,
@@ -263,6 +286,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// List the authenticated user's contact groups
+    /// (contactGroups.list).
     pub fn contact_groups_list(
         &mut self,
         group_fields: &[PeopleGroupField],
@@ -272,6 +297,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Fetch a single contact group by resource name (contactGroups.get).
     pub fn contact_group_get(
         &mut self,
         resource_name: &str,
@@ -283,6 +309,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Create a new contact group and return it (contactGroups.create).
     pub fn contact_group_create(
         &mut self,
         group: &PeopleContactGroup,
@@ -292,6 +319,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Update an existing contact group and return it
+    /// (contactGroups.update).
     pub fn contact_group_update(
         &mut self,
         group: &PeopleContactGroup,
@@ -307,6 +336,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Delete a contact group; optionally also delete its member contacts
+    /// (contactGroups.delete).
     pub fn contact_group_delete(
         &mut self,
         resource_name: &str,
@@ -316,6 +347,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Add and/or remove members from a contact group
+    /// (contactGroups.members.modify).
     pub fn contact_group_members_modify(
         &mut self,
         resource_name: &str,
@@ -332,6 +365,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// List the authenticated user's "other contacts" (otherContacts.list).
     pub fn other_contacts_list(
         &mut self,
         read_mask: &[PeoplePersonField],
@@ -341,6 +375,7 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Search other contacts by query string (otherContacts.search).
     pub fn other_contacts_search(
         &mut self,
         query: &str,
@@ -351,6 +386,8 @@ impl PeopleClientStd {
         self.run(coroutine)
     }
 
+    /// Copy an other contact into the user's personal contacts
+    /// (otherContacts.copyOtherContactToMyContactsGroup).
     pub fn other_contact_copy(
         &mut self,
         resource_name: &str,
@@ -372,7 +409,10 @@ impl fmt::Debug for PeopleClientStd {
     }
 }
 
+/// Object-safe stream used by [`PeopleClientStd`]; combines `Read`, `Write`,
+/// `Send`, and `Any` so the concrete type can be recovered at runtime.
 pub trait PeopleStream: Read + Write + Send + Any {
+    /// Return a mutable `Any` reference to the underlying concrete type.
     fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 

@@ -29,6 +29,9 @@ pub struct PeopleOtherContactsSearch {
 }
 
 impl PeopleOtherContactsSearch {
+    /// Build a coroutine that searches "Other contacts" using a
+    /// plain-text prefix `query`, returning the specified `read_mask`
+    /// fields and at most `page_size` results.
     pub fn new(
         auth: &HttpAuthBearer,
         query: &str,
@@ -66,6 +69,8 @@ impl PeopleCoroutine for PeopleOtherContactsSearch {
     type Yield = PeopleYield;
     type Return = Result<PeopleSendOutput<PeopleSearchResponse>, PeopleSendError>;
 
+    /// Drive the HTTP exchange one step; yields I/O wants until the
+    /// response is fully received, then completes with the search results.
     fn resume(&mut self, arg: Option<&[u8]>) -> PeopleCoroutineState<Self::Yield, Self::Return> {
         let out = people_try!(&mut self.send, arg);
         debug!("people other contacts searched");

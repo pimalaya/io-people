@@ -27,8 +27,11 @@ use url::Url;
 
 use crate::coroutine::{PeopleCoroutine, PeopleCoroutineState, PeopleYield};
 
+/// Base URL for the Google People API v1.
 pub const PEOPLE_API_BASE: &str = "https://people.googleapis.com/v1/";
 
+/// Placeholder response type for People API operations that return no body
+/// (e.g. DELETE).
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq)]
 pub struct PeopleNoResponse;
 
@@ -42,25 +45,40 @@ impl<'de> Deserialize<'de> for PeopleNoResponse {
     }
 }
 
+/// Errors that can occur while sending a People API HTTP request.
 #[derive(Debug, Error)]
 pub enum PeopleSendError {
+    /// The underlying HTTP/1.1 send coroutine failed.
     #[error("People HTTP request failed: {0}")]
     Send(#[from] Http11SendError),
+    /// The request body could not be serialized to JSON.
     #[error("People request serialization failed: {0}")]
     SerializeRequest(#[source] serde_json::Error),
+    /// The response body could not be deserialized from JSON.
     #[error("People response parsing failed: {0}")]
     ParseResponse(#[source] serde_json::Error),
+    /// A URL passed to a coroutine constructor could not be parsed.
     #[error("People URL parsing failed: {0}")]
     ParseUrl(#[from] url::ParseError),
+    /// A request parameter was rejected before the HTTP round-trip.
     #[error("Invalid People request: {0}")]
     InvalidRequest(String),
+    /// The API returned a non-2xx status with an error envelope.
     #[error("People API returned HTTP {status}: {message}")]
-    Api { status: u16, message: String },
+    Api {
+        /// HTTP status code reported by the API error envelope.
+        status: u16,
+        /// Human-readable error message from the API error envelope.
+        message: String,
+    },
+    /// The server issued a redirect, which the client never follows.
     #[error("People server returned an unexpected redirect")]
     UnexpectedRedirect,
 }
 
 impl PeopleSendError {
+    /// Return the HTTP status code if this is an [`PeopleSendError::Api`]
+    /// error, otherwise `None`.
     pub fn status(&self) -> Option<u16> {
         match self {
             Self::Api { status, .. } => Some(*status),
@@ -68,31 +86,41 @@ impl PeopleSendError {
         }
     }
 
+    /// Return `true` if the error status indicates a transient failure that
+    /// may succeed on retry (429, 500, 502, 503, 504).
     pub fn is_retryable(&self) -> bool {
         matches!(self.status(), Some(429 | 500 | 502 | 503 | 504))
     }
 }
 
+/// Successful output from a [`PeopleSend`] coroutine.
 #[derive(Clone, Debug)]
 pub struct PeopleSendOutput<T> {
+    /// The deserialized API response body.
     pub response: T,
+    /// Whether the server indicated the connection can be reused.
     pub keep_alive: bool,
 }
 
+/// I/O-free coroutine that sends one HTTP request to the People API and
+/// deserializes the JSON response into `T`.
 pub struct PeopleSend<T> {
     state: State,
     _phantom: PhantomData<T>,
 }
 
 impl<T: DeserializeOwned> PeopleSend<T> {
+    /// Build a `GET` request coroutine for the given URL.
     pub fn get(auth: &HttpAuthBearer, url: Url) -> Self {
         Self::with_method(auth, "GET", url, None, Vec::new())
     }
 
+    /// Build a `DELETE` request coroutine for the given URL.
     pub fn delete(auth: &HttpAuthBearer, url: Url) -> Self {
         Self::with_method(auth, "DELETE", url, None, Vec::new())
     }
 
+    /// Build a `POST` request coroutine with a JSON-serialized body.
     pub fn post_json<B: Serialize>(
         auth: &HttpAuthBearer,
         url: Url,
@@ -108,6 +136,7 @@ impl<T: DeserializeOwned> PeopleSend<T> {
         ))
     }
 
+    /// Build a `PUT` request coroutine with a JSON-serialized body.
     pub fn put_json<B: Serialize>(
         auth: &HttpAuthBearer,
         url: Url,
@@ -123,6 +152,7 @@ impl<T: DeserializeOwned> PeopleSend<T> {
         ))
     }
 
+    /// Build a `PATCH` request coroutine with a JSON-serialized body.
     pub fn patch_json<B: Serialize>(
         auth: &HttpAuthBearer,
         url: Url,
@@ -138,6 +168,8 @@ impl<T: DeserializeOwned> PeopleSend<T> {
         ))
     }
 
+    /// Build a request coroutine for an arbitrary HTTP method, optional
+    /// content type, and raw body bytes.
     pub fn with_method(
         auth: &HttpAuthBearer,
         method: &str,
@@ -245,6 +277,8 @@ struct ErrorBody {
     message: Option<String>,
 }
 
+/// Extract a `(status, message)` pair from a People API error response body,
+/// falling back to the HTTP status and a generic message when parsing fails.
 pub fn parse_api_error(http_status: u16, body: &[u8]) -> (u16, String) {
     if let Ok(envelope) = serde_json::from_slice::<ErrorEnvelope>(body) {
         let status = envelope.error.code.unwrap_or(http_status);

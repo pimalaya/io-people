@@ -32,6 +32,12 @@ pub struct PeopleContactUpdate {
 }
 
 impl PeopleContactUpdate {
+    /// Build a new contact update coroutine.
+    ///
+    /// `person` must carry a non-empty `resource_name` and a valid etag from
+    /// a `people.get` response. `update_person_fields` must be non-empty and
+    /// lists the fields to fully replace; `person_fields` controls the
+    /// response.
     pub fn new(
         auth: &HttpAuthBearer,
         person: &PeoplePerson,

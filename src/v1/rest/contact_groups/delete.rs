@@ -19,6 +19,8 @@ pub struct PeopleContactGroupDelete {
 }
 
 impl PeopleContactGroupDelete {
+    /// Build a contact-group deletion coroutine. Pass `delete_contacts:
+    /// true` to also delete all contacts that belong only to this group.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,

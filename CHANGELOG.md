@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Moved each resource's data types out of its `types` catch-all submodule into the sibling resource module (people.rs, contact_groups.rs), next to the `pub mod` operation declarations.
+
+  The public paths, for example `people::PeoplePerson` and `contact_groups::PeopleContactGroup`, are unchanged: the types were already re-exported at the resource module, so only the private `types` submodule and its re-export go away.
+
+- Documented every public item, including struct fields, enum variants and methods, aligning with the documentation guidelines.
+
 ## [0.1.0] - 2026-07-16
 
 ### Added

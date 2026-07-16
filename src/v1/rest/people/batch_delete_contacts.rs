@@ -27,6 +27,10 @@ pub struct PeopleContactsBatchDelete {
 }
 
 impl PeopleContactsBatchDelete {
+    /// Build a new contacts batch deletion coroutine (500 max).
+    ///
+    /// `resource_names` must be non-empty; each entry must identify an
+    /// existing contact resource.
     pub fn new(auth: &HttpAuthBearer, resource_names: &[String]) -> Result<Self, PeopleSendError> {
         debug!("prepare people contacts batch deletion");
         trace!("resource_names: {resource_names:?}");

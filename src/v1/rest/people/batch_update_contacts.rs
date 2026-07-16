@@ -29,6 +29,7 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactsBatchUpdateResponse {
+    /// Updated persons keyed by their resource name.
     #[serde(default)]
     pub update_result: BTreeMap<String, PeoplePersonResponse>,
 }
@@ -51,6 +52,10 @@ pub struct PeopleContactsBatchUpdate {
 }
 
 impl PeopleContactsBatchUpdate {
+    /// Build a new contacts batch update coroutine (200 max).
+    ///
+    /// Each person must have a non-empty `resource_name` and a valid etag.
+    /// `update_mask` must be non-empty; `read_mask` controls the response.
     pub fn new(
         auth: &HttpAuthBearer,
         persons: &[PeoplePerson],

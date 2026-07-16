@@ -29,12 +29,18 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleConnectionsListParams<'a> {
+    /// Maximum number of connections to return per page (max 1000).
     pub page_size: Option<u32>,
+    /// Page token from a previous response, used to retrieve the next page.
     pub page_token: Option<&'a str>,
+    /// When true, a `next_sync_token` is included in the final page response.
     #[serde(skip_serializing_if = "crate::v1::query::is_false")]
     pub request_sync_token: bool,
+    /// Sync token from a previous full listing, for incremental change fetch.
     pub sync_token: Option<&'a str>,
+    /// Sort order for the returned connections.
     pub sort_order: Option<PeopleSortOrder>,
+    /// Data sources to include; defaults to all sources when empty.
     pub sources: &'a [PeopleReadSourceType],
 }
 
@@ -42,14 +48,19 @@ pub struct PeopleConnectionsListParams<'a> {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleConnectionsListResponse {
+    /// Contacts returned for this page.
     #[serde(default)]
     pub connections: Vec<PeoplePerson>,
+    /// Token for retrieving the next page; absent on the final page.
     #[serde(default)]
     pub next_page_token: Option<String>,
+    /// Token for fetching incremental changes on subsequent calls.
     #[serde(default)]
     pub next_sync_token: Option<String>,
+    /// Total number of people in the list without pagination.
     #[serde(default)]
     pub total_people: Option<u32>,
+    /// Total number of items in the list without pagination.
     #[serde(default)]
     pub total_items: Option<u32>,
 }
@@ -61,6 +72,10 @@ pub struct PeopleConnectionsList {
 }
 
 impl PeopleConnectionsList {
+    /// Build a new connections listing coroutine.
+    ///
+    /// `person_fields` must be non-empty; `params` carries optional
+    /// pagination and sync-token arguments.
     pub fn new(
         auth: &HttpAuthBearer,
         person_fields: &[PeoplePersonField],

@@ -29,6 +29,10 @@ pub struct PeopleContactsSearch {
 }
 
 impl PeopleContactsSearch {
+    /// Build a new contacts search coroutine.
+    ///
+    /// `read_mask` must be non-empty. `query` is matched as a prefix phrase
+    /// against contact fields; results may lag recent mutations.
     pub fn new(
         auth: &HttpAuthBearer,
         query: &str,

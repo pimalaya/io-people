@@ -39,6 +39,12 @@ pub struct PeopleOtherContactCopy {
 }
 
 impl PeopleOtherContactCopy {
+    /// Build a coroutine that copies the "Other contact" identified by
+    /// `resource_name` into the user's "myContacts" group.
+    ///
+    /// `copy_mask` selects which fields to copy (limited to
+    /// `emailAddresses`, `names`, `phoneNumbers`); `read_mask` and
+    /// `sources` control the returned `PeoplePerson` representation.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,
@@ -86,6 +92,8 @@ impl PeopleCoroutine for PeopleOtherContactCopy {
     type Yield = PeopleYield;
     type Return = Result<PeopleSendOutput<PeoplePerson>, PeopleSendError>;
 
+    /// Drive the HTTP exchange one step; yields I/O wants until the
+    /// response is fully received, then completes with the copied person.
     fn resume(&mut self, arg: Option<&[u8]>) -> PeopleCoroutineState<Self::Yield, Self::Return> {
         let out = people_try!(&mut self.send, arg);
         debug!("people other contact copied");

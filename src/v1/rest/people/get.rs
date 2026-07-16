@@ -23,6 +23,10 @@ pub struct PeoplePersonGet {
 }
 
 impl PeoplePersonGet {
+    /// Build a new person retrieval coroutine.
+    ///
+    /// `resource_name` (e.g. `people/me`) and `person_fields` must both be
+    /// non-empty.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,

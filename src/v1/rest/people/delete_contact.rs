@@ -20,6 +20,9 @@ pub struct PeopleContactDelete {
 }
 
 impl PeopleContactDelete {
+    /// Build a new contact deletion coroutine.
+    ///
+    /// `resource_name` must be non-empty and identify an existing contact.
     pub fn new(auth: &HttpAuthBearer, resource_name: &str) -> Result<Self, PeopleSendError> {
         debug!("prepare people contact for deletion");
         trace!("resource_name: {resource_name:?}");

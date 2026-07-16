@@ -24,8 +24,11 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleContactGroupMembersModifyResponse {
+    /// Person resource names from the request that were not found.
     #[serde(default)]
     pub not_found_resource_names: Vec<String>,
+    /// Person resource names that could not be removed because they belong
+    /// to no other contact group.
     #[serde(default)]
     pub can_not_remove_last_contact_group_resource_names: Vec<String>,
 }
@@ -46,6 +49,8 @@ pub struct PeopleContactGroupMembersModify {
 }
 
 impl PeopleContactGroupMembersModify {
+    /// Build a group-members modification coroutine. At least one of the
+    /// add/remove slices must be non-empty; additions require a user group.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_name: &str,

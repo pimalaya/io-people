@@ -25,6 +25,7 @@ use crate::{
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeoplePersonsBatchGetResponse {
+    /// One entry per requested resource name, in request order.
     #[serde(default)]
     pub responses: Vec<PeoplePersonResponse>,
 }
@@ -35,6 +36,10 @@ pub struct PeoplePersonsBatchGet {
 }
 
 impl PeoplePersonsBatchGet {
+    /// Build a new persons batch retrieval coroutine.
+    ///
+    /// Both `resource_names` and `person_fields` must be non-empty; up to
+    /// 200 resource names may be requested in a single call.
     pub fn new(
         auth: &HttpAuthBearer,
         resource_names: &[String],

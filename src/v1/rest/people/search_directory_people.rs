@@ -30,8 +30,11 @@ use crate::{
 #[derive(Debug, Clone, Default, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleDirectorySearchParams<'a> {
+    /// Additional person data to merge into each directory entry.
     pub merge_sources: &'a [PeopleDirectoryMergeSourceType],
+    /// Maximum number of people to return per page (max 100).
     pub page_size: Option<u32>,
+    /// Page token from a previous response, used to retrieve the next page.
     pub page_token: Option<&'a str>,
 }
 
@@ -39,10 +42,13 @@ pub struct PeopleDirectorySearchParams<'a> {
 #[derive(Debug, Clone, Default, Deserialize, Serialize, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PeopleDirectorySearchResponse {
+    /// Directory persons matching the query for this page.
     #[serde(default)]
     pub people: Vec<PeoplePerson>,
+    /// Token for retrieving the next page; absent on the final page.
     #[serde(default)]
     pub next_page_token: Option<String>,
+    /// Total number of matching people across all pages.
     #[serde(default)]
     pub total_size: Option<u32>,
 }
@@ -53,6 +59,10 @@ pub struct PeopleDirectorySearch {
 }
 
 impl PeopleDirectorySearch {
+    /// Build a new directory people search coroutine.
+    ///
+    /// Both `read_mask` and `sources` must be non-empty. `query` is a
+    /// plain-text prefix string matched against the directory entries.
     pub fn new(
         auth: &HttpAuthBearer,
         query: &str,
